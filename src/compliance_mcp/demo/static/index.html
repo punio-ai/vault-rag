@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Compliance Checker — Demo</title>
+<style>
+  body {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    max-width: 700px;
+    margin: 60px auto;
+    padding: 0 20px;
+  }
+  h1 { font-size: 1.4rem; color: #f8fafc; }
+  p.sub { color: #94a3b8; margin-top: -8px; }
+  .controls { display: flex; gap: 8px; margin-bottom: 20px; }
+  input, select {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f8fafc;
+  }
+  input { flex: 1; }
+  button {
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #38bdf8;
+    color: #0f172a;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .score {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #f8fafc;
+  }
+  .rule {
+    background: #1e293b;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border-left: 4px solid #334155;
+  }
+  .rule.pass { border-left-color: #4ade80; }
+  .rule.fail { border-left-color: #f87171; }
+  .rule.unclear { border-left-color: #fbbf24; }
+  .rule-header { display: flex; justify-content: space-between; font-weight: 600; }
+  .badge { font-size: 0.75rem; text-transform: uppercase; }
+  .badge.pass { color: #4ade80; }
+  .badge.fail { color: #f87171; }
+  .badge.unclear { color: #fbbf24; }
+  .reason { color: #94a3b8; font-size: 0.9rem; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <h1>Compliance Checker</h1>
+  <p class="sub">Audits a document against a defined ruleset — every verdict backed by cited evidence.</p>
+
+  <div class="controls">
+    <input id="filename" placeholder="e.g. private_policy_2.txt" autocomplete="off" />
+    <button id="submit">Run Check</button>
+  </div>
+
+  <div id="results"></div>
+
+<script>
+const filenameInput = document.getElementById('filename');
+const submitBtn = document.getElementById('submit');
+const results = document.getElementById('results');
+
+submitBtn.addEventListener('click', async () => {
+  const filename = filenameInput.value.trim();
+  if (!filename) return;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Checking...';
+  results.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename })
+    });
+    const data = await res.json();
+
+    if (data.status === 'error') {
+      results.innerHTML = `<div class="rule fail">${data.message}</div>`;
+      return;
+    }
+
+    results.innerHTML = `<div class="score">Score: ${data.score}</div>`;
+    data.results.forEach(r => {
+      results.innerHTML += `
+        <div class="rule ${r.verdict}">
+          <div class="rule-header">
+            <span>${r.question}</span>
+            <span class="badge ${r.verdict}">${r.verdict}</span>
+          </div>
+          <div class="reason">${r.reason}</div>
+        </div>
+      `;
+    });
+  } catch (err) {
+    results.innerHTML = `<div class="rule fail">Error: could not reach server.</div>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Run Check';
+  }
+});
+</script>
+</body>
+</html>
