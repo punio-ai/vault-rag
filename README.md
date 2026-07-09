@@ -59,7 +59,7 @@ This repo is both:
 A minimal FastAPI + browser UI is included (`demo/`) so the system can be shown to a non-technical audience without any MCP client setup — just a browser.
 
 ```bash
-uv run uvicorn demo.app:app --reload --port 8000
+uv run uvicorn rag_mcp.demo.app:app --reload --port 8000
 ```
 
 Then open `http://localhost:8000` and ask a question about the ingested documents.
